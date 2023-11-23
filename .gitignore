@@ -5,3 +5,7 @@ bin-int/
 
 # Files
 *.user
+
+# Visual Studio generated files
+*.vcxproj
+*.vcxproj.filters
