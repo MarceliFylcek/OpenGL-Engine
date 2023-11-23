@@ -144,7 +144,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Dependencies\glm\detail\glm.cpp" />
+    <ClCompile Include="src\shader.cpp" />
+    <ClCompile Include="src\controls.cpp" />
     <ClCompile Include="src\Source.cpp" />
+    <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies\glm\detail\func_common.inl" />
@@ -569,6 +572,9 @@
     <ClInclude Include="Dependencies\glm\vec3.hpp" />
     <ClInclude Include="Dependencies\glm\vec4.hpp" />
     <ClInclude Include="Dependencies\glm\vector_relational.hpp" />
+    <ClInclude Include="src\shader.h" />
+    <ClInclude Include="src\controls.h" />
+    <ClInclude Include="src\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

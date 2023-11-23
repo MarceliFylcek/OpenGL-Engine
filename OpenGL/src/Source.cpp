@@ -1,4 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include <gl/glew.h> //always first
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -9,172 +8,19 @@
 #include <sstream>
 #include <chrono>
 #include <thread>
+#include "utils.h"
+#include "controls.h"
+#include "shader.h"
+
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 900
 
 
-float rotation = 0;
+float InputController::rotation = 0.0f;
 
-unsigned int load_BMP(const char* path)
+void updateProjectionMatrix()
 {
-    // BMP header
-    unsigned char header[54];
 
-    // Position of data in the file
-    unsigned int dataPos;
-
-    // Width and height of the image
-    unsigned int width, height;
-    unsigned int imageSize;
-
-    // Data container
-    unsigned char* data;
-
-    FILE* file = fopen(path, "rb");
-    if (!file)
-    {
-        std::cout << "File cannot be open.\n";
-        return -1;
-    }
-
-    // Read the header
-    if (fread(header, 1, 54, file) != 54)
-    {
-        printf("Wrong file format\n");
-        return -1;
-    }
-
-    if (header[0] != 'B' || header[1] != 'M')
-    {
-        printf("Wrong file format\n");
-        return -1;
-    }
-
-    dataPos = *(int*)&(header[0x0A]);
-    imageSize = *(int*)&(header[0x22]);
-    width = *(int*)&(header[0x12]);
-    height = *(int*)&(header[0x16]);
-
-    if (imageSize == 0)
-        imageSize = width * height * 3;
-    
-    if (dataPos == 0)
-        dataPos = 54;
-
-    data = new unsigned char[imageSize];
-    fread(data, 1, imageSize, file);
-    fclose(file);
-
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
-
-    glBindTexture(GL_TEXTURE_2D, textureID);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    return 0;
-}
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_X && (action == GLFW_REPEAT || action == GLFW_PRESS))
-    {
-        rotation -= 0.1f;
-    }
-
-    if (key == GLFW_KEY_Z && (action == GLFW_REPEAT || action == GLFW_PRESS))
-    {
-        rotation += 0.1f;
-    }
-}
-
-struct ShaderProgramSource
-{
-    std::string VertexSource;
-    std::string FragmentSource;
-    std::string NotRecognized;
-};
-
-static ShaderProgramSource ParseShader(const std::string& filepath)
-{
-    enum class ShaderType
-    {
-        NONE = 2, VERTEX = 0, FRAGMENT = 1
-    };
-
-    std::ifstream stream(filepath);
-    std::string line;
-    std::stringstream ss[3];
-    ShaderType type = ShaderType::NONE;
-  
-    // For every line
-    while (getline(stream, line, '\n'))
-    {
-        if (line.find("#shader") != std::string::npos)
-        {
-            if (line.find("vertex") != std::string::npos)
-            {
-                type = ShaderType::VERTEX;
-            }
-            else if (line.find("fragment") != std::string::npos)
-            {
-                type = ShaderType::FRAGMENT;
-            }
-        }
-        else
-        {
-            ss[(int)type] << line << "\n";
-        }
-    }
-
-    return {ss[0].str(), ss[1].str(), ss[2].str()};
-}
-
-static unsigned int CompileShader(unsigned int type, const std::string& source)
-{
-    unsigned int id = glCreateShader(type);
-    const char* src = source.c_str();
-    glShaderSource(id, 1, &src, nullptr);
-    glCompileShader(id);
-
-    int result;
-    glGetShaderiv(id, GL_COMPILE_STATUS, &result);
-
-    // Failed compilation
-    if (result == GL_FALSE)
-    {
-        int length;
-        glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
-        char* message = (char*)alloca(length * sizeof(char));
-        glGetShaderInfoLog(id, length, &length, message);
-
-        std::cout << "Failed to compile shader: " << (type == GL_VERTEX_SHADER ? "vertex shader" : "fragment shader") << std::endl;
-        std::cout << message << std::endl;
-        glDeleteShader(id);
-        return 0;
-    }
-    return id;
-}
-
-static unsigned int CreateShader(const std::string& vertexShader, const std::string& fragmentShader)
-{
-    unsigned int program = glCreateProgram();
-    unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
-    unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
-
-    glAttachShader(program, vs);
-    glAttachShader(program, fs);
-    glLinkProgram(program);
-    glValidateProgram(program);
-
-    glDeleteShader(vs);
-    glDeleteShader(fs);
-
-    return program;
 }
 
 int main(void)
@@ -185,9 +31,6 @@ int main(void)
     // Initialize the library 
     if (!glfwInit())
         return -1;
-
-    const unsigned int WINDOW_WIDTH = 1280;
-    const unsigned int WINDOW_HEIGHT = 900;
 
     // Create a windowed mode window and its OpenGL context
     window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello World", NULL, NULL);
@@ -337,7 +180,7 @@ int main(void)
         2,                                // attribute.
         2,                                // size
         GL_FLOAT,                         // type
-        GL_FALSE,                         // normalized?
+        GL_FALSE,                         //
         0,                                // stride
         (void*)0                          // array buffer offset
     );
@@ -345,9 +188,9 @@ int main(void)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-    ShaderProgramSource source = ParseShader("shaders/Basic.shader");
-    unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
-    glUseProgram(shader);
+    Shader *shader = new Shader("shaders/Basic.shader");
+    unsigned int program_id = (*shader).GetProgramID();
+
     glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
     std::cout << glGetString(GL_VERSION) << std::endl;
@@ -364,7 +207,7 @@ int main(void)
     glm::mat4 Model = glm::mat4(1.0f);
     glm::mat4 mvp = Projection * View * Model;
 
-    GLuint MatrixID = glGetUniformLocation(shader, "MVP");
+    GLuint MatrixID = glGetUniformLocation(program_id, "MVP");
 
     glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
 
@@ -373,6 +216,12 @@ int main(void)
     float camZ = cos(glfwGetTime()) * radius;
 
     GLuint Texture = load_BMP("textures/text.bmp");
+    InputController& inputController = InputController::get_instance();
+
+    glfwSetKeyCallback(window, inputController.key_callback);
+    glfwSetCursorPosCallback(window, inputController.cursor_position_callback);
+
+    float rotation = inputController.get_rotation();
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
@@ -401,10 +250,11 @@ int main(void)
         /* Poll for and process events */
         glfwPollEvents();
 
-        glfwSetKeyCallback(window, key_callback);
+        rotation = inputController.get_rotation();
+
     }
 
-    glDeleteProgram(shader);
+    delete shader;
     glfwTerminate();
     return 0;
 }
