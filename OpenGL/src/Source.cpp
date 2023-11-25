@@ -16,8 +16,6 @@
 #define WINDOW_HEIGHT 900
 
 
-float InputController::rotation = 0.0f;
-
 void updateProjectionMatrix()
 {
 
@@ -216,22 +214,23 @@ int main(void)
     float camZ = cos(glfwGetTime()) * radius;
 
     GLuint Texture = load_BMP("textures/text.bmp");
-    InputController& inputController = InputController::get_instance();
+
+    InputController& inputController = InputController::get_instance(WINDOW_HEIGHT, WINDOW_WIDTH, 12.0f);
 
     glfwSetKeyCallback(window, inputController.key_callback);
     glfwSetCursorPosCallback(window, inputController.cursor_position_callback);
 
-    float rotation = inputController.get_rotation();
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
-        camX = sin(rotation) * radius;
-        camZ = cos(rotation) * radius;
+        glm::vec3 cam_pos = inputController.get_cam_pos();
+        glm::vec3 cam_dir = inputController.get_cam_dir();
+
         View = glm::lookAt(
-            glm::vec3(camX, 1.5, camZ),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 1.0f, 0.0f));
+            cam_pos,   // camera position
+            cam_dir,  // camera looks at
+            glm::vec3(0.0f, 1.0f, 0.0f)); // up-direction
 
         mvp = Projection * View * Model;
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
@@ -249,9 +248,6 @@ int main(void)
 
         /* Poll for and process events */
         glfwPollEvents();
-
-        rotation = inputController.get_rotation();
-
     }
 
     delete shader;
